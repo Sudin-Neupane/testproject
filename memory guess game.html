@@ -1,0 +1,354 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<title>Advanced Memory Match Game</title>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Segoe UI;
+}
+
+body{
+height:100vh;
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:center;
+background:linear-gradient(135deg,#667eea,#764ba2);
+color:white;
+}
+
+h1{
+margin-bottom:10px;
+}
+
+#stats{
+margin-bottom:10px;
+font-size:18px;
+}
+
+#countdown{
+margin-bottom:10px;
+font-size:20px;
+font-weight:bold;
+}
+
+#gameBoard{
+display:grid;
+grid-template-columns:repeat(8,80px);
+gap:10px;
+padding:20px;
+background:rgba(255,255,255,0.1);
+backdrop-filter:blur(10px);
+border-radius:15px;
+}
+
+.card{
+width:80px;
+height:80px;
+background:linear-gradient(145deg,#4facfe,#00f2fe);
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:28px;
+cursor:pointer;
+border-radius:10px;
+transition:.3s;
+}
+
+.card:hover{
+transform:scale(1.05);
+}
+
+.flipped{
+background:white;
+color:black;
+}
+
+.matched{
+background:#2ecc71;
+color:black;
+}
+
+button{
+margin-top:10px;
+padding:10px 20px;
+border:none;
+border-radius:25px;
+cursor:pointer;
+background:#ff5e62;
+color:white;
+font-size:16px;
+}
+
+#result{
+margin-top:15px;
+text-align:center;
+font-size:18px;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>🧠 Memory Game</h1>
+
+<div id="stats">
+Moves: <span id="moves">0</span> |
+Time: <span id="time">0</span>s
+</div>
+
+<div id="countdown"></div>
+
+<button id="startBtn" onclick="startGame()">Start Game</button>
+
+<div id="gameBoard"></div>
+
+<button onclick="restartGame()">Restart Game</button>
+
+<div id="result"></div>
+
+<script>
+
+const board = document.getElementById("gameBoard")
+const movesText = document.getElementById("moves")
+const timeText = document.getElementById("time")
+const resultText = document.getElementById("result")
+const countdownText = document.getElementById("countdown")
+let symbols = [
+"🌞","🌞",   // Sun
+"🌳","🌳",   // Tree
+"🚜","🚜",   // Tractor
+"🚲","🚲",   // Bicycle
+"🏠","🏠",   // House
+"🌾","🌾",   // Paddy
+"🐘","🐘",   // Elephant
+"✊","✊",   // Fist
+
+"📚","📚",   // Book
+"⚖️","⚖️",   // Balance / justice
+"🔔","🔔",   // Bell
+"🪔","🪔",   // Lamp
+"⛏️","⛏️",   // Hammer / tool
+"🌺","🌺",   // Flower
+"🐓","🐓",   // Rooster
+"⭐","⭐"    // Star
+]
+
+symbols.sort(()=>Math.random()-0.5)
+
+let firstCard=null
+let secondCard=null
+let lockBoard=false
+let gameStarted=false
+
+let moves=0
+let matches=0
+
+let timer=0
+let gameTimer
+
+function startTimer(){
+gameTimer=setInterval(()=>{
+timer++
+timeText.innerText=timer
+},1000)
+}
+
+function createBoard(){
+
+board.innerHTML=""
+
+symbols.forEach(symbol=>{
+
+let card=document.createElement("div")
+
+card.classList.add("card")
+
+card.dataset.symbol=symbol
+
+card.innerText=symbol
+
+card.addEventListener("click",flipCard)
+
+board.appendChild(card)
+
+})
+
+}
+
+function startGame(){
+
+document.getElementById("startBtn").style.display="none"
+
+let countdown=5
+
+countdownText.innerText="Memorize: "+countdown
+
+let interval=setInterval(()=>{
+
+countdown--
+
+countdownText.innerText="Memorize: "+countdown
+
+if(countdown===0){
+
+clearInterval(interval)
+
+countdownText.innerText="Go!"
+
+hideCards()
+
+gameStarted=true
+
+startTimer()
+
+}
+
+},1000)
+
+}
+
+function hideCards(){
+
+let cards=document.querySelectorAll(".card")
+
+cards.forEach(card=>{
+card.innerText="?"
+})
+
+}
+
+function flipCard(){
+
+if(!gameStarted) return
+if(lockBoard) return
+if(this===firstCard) return
+
+this.innerText=this.dataset.symbol
+this.classList.add("flipped")
+
+if(!firstCard){
+firstCard=this
+return
+}
+
+secondCard=this
+
+moves++
+movesText.innerText=moves
+
+checkMatch()
+
+}
+
+function checkMatch(){
+
+if(firstCard.dataset.symbol===secondCard.dataset.symbol){
+
+firstCard.classList.add("matched")
+secondCard.classList.add("matched")
+
+matches++
+
+if(matches===16){
+endGame()
+}
+
+resetTurn()
+
+}else{
+
+lockBoard=true
+
+setTimeout(()=>{
+
+firstCard.innerText="?"
+secondCard.innerText="?"
+
+firstCard.classList.remove("flipped")
+secondCard.classList.remove("flipped")
+
+resetTurn()
+
+},800)
+
+}
+
+}
+
+function resetTurn(){
+
+[firstCard,secondCard]=[null,null]
+
+lockBoard=false
+
+}
+
+function endGame(){
+
+clearInterval(gameTimer)
+
+let rating=""
+let memory=""
+
+if(moves<=40){
+rating="⭐⭐⭐⭐⭐"
+memory="Genius Memory"
+}
+else if(moves<=55){
+rating="⭐⭐⭐⭐"
+memory="Excellent Memory"
+}
+else if(moves<=70){
+rating="⭐⭐⭐"
+memory="Average Memory"
+}
+else{
+rating="⭐⭐"
+memory="Needs Practice"
+}
+
+resultText.innerHTML=
+"🏆 Game Finished! <br><br>"+
+"Moves: "+moves+"<br>"+
+"Time: "+timer+" seconds<br><br>"+
+"⭐ Rating: "+rating+"<br>"+
+"🧠 Memory Power: "+memory
+
+}
+
+function restartGame(){
+
+symbols.sort(()=>Math.random()-0.5)
+
+moves=0
+matches=0
+timer=0
+gameStarted=false
+
+movesText.innerText=0
+timeText.innerText=0
+resultText.innerHTML=""
+countdownText.innerHTML=""
+
+clearInterval(gameTimer)
+
+document.getElementById("startBtn").style.display="inline-block"
+
+createBoard()
+
+}
+
+createBoard()
+
+</script>
+
+</body>
+</html>
